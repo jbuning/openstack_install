@@ -1,0 +1,16 @@
+---
+# tasks file for glance
+- name: Use the database access client to connect to the database server as the root user
+- name: Create glance database
+- name: Grant access to glance db
+- name: Source admin-openrc
+- name: Create the glance user
+- name: Add the admin role to the glance user and service project
+- name: Create the glance service entity
+- name: Create the Image service API endpoints
+- name: Install the glance package
+- name: Edit the /etc/glance/glance-api.conf
+- name: Edit the /etc/glance/glance-registry.conf
+- name: Populate the Image service database
+- name: Restart the Image services
+...

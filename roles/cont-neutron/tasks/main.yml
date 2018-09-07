@@ -1,0 +1,17 @@
+---
+# tasks file for cont-neutron
+- name: Use the database access client to connect to the database server as the root user
+- name: Create neutron database
+- name: Grant access to neutron db
+- name: Source admin-openrc
+- name: Create the neutron user
+- name: Add the admin role to the neutron user
+- name: Create the neutron service entity
+- name: Create the Networking service API endpoints
+- name: Install the neutron package (https://docs.openstack.org/ocata/networking-guide/deploy-ovs-provider.html)
+- name: Edit the /etc/neutron/neutron.conf
+- name: Edit the /etc/neutron/plugins/ml2/ml2_conf.ini
+- name: Populate the Networking service database
+- name: Restart the Compute API service
+- name: Restart the Networking service
+...

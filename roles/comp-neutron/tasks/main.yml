@@ -1,0 +1,12 @@
+---
+# tasks file for comp-neutron
+- name: Install the neutron packages (OVS layer 2 neutron-openvswitch-agent, DHCP, metadata agents)
+- name: Edit the /etc/neutron/neutron.conf
+- name: Edit the /etc/neutron/plugins/ml2/openvswitch_agent.ini
+- name: Edit the /etc/neutron/dhcp_agent.ini
+- name: Edit the /etc/neutron/metadata_agent.ini
+- name: Start OVS service
+- name: Create OVS Provider bridge
+- name: Edit the /etc/network/interfaces and add IP to the provider bridge
+- name: Restart the Networking services (OVS agent, DHCP Agent, Metadata Agent)
+...

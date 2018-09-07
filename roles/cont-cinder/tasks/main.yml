@@ -1,0 +1,19 @@
+---
+# tasks file for cont-cinder
+- name: Use the database access client to connect to the database server as the root user
+- name: Create the cinder database
+- name: Grant proper access to the cinder database
+- name: Source admin-openrc
+- name: Create a cinder user
+- name: Add the admin role to the cinder user
+- name: Create the cinderv2 and cinderv3 service entities
+- name: Create the Block Storage service API endpoints
+- name: Install the block storage packages
+- name: Edit the /etc/cinder/cinder.conf
+- name: In the [oslo_concurrency] section, configure the lock path
+- name: Populate the Block Storage database
+- name: Edit the /etc/nova/nova.conf
+- name: Restart the Compute API service
+- name: Restart cinder-scheduler service
+- name: Restart apache2 service
+...

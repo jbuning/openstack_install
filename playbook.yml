@@ -1,0 +1,13 @@
+---
+- name: Test Playbook
+  hosts: controller-1
+  become: yes
+  vars:
+    mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
+    mysql_root_password: rootdbpass
+  tasks:
+#  - name: edit etcd
+#    template:
+#      src: roles/controller/templates/etcd.template
+#      dest: /etc/etcd/etcd.conf.yml
+  - include: roles/controller/tasks/mysql_secure_installation.yml

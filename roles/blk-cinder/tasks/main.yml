@@ -1,0 +1,17 @@
+---
+# tasks file for blk-cinder
+- name: Install the supporting utility packages
+- name: Create the LVM physical volume /dev/sdb
+- name: Create the LVM volume group cinder-volumes
+- name: Add a filter that accepts the /dev/sdb
+- name: Install the block storage packages
+- name: Edit the /etc/cinder/cinder.conf
+- name: Restart the Block Storage volume service (tgt)
+  service:
+    name: tgt
+    status: restarted
+- name: Restart the Block Storage volume service (cinder-volume)
+  service:
+    name: cinder-volume
+    status: restarted
+...

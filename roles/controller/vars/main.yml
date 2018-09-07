@@ -1,0 +1,5 @@
+---
+# vars file for controller
+mysql_root_password: rootdbpass
+mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
+RABBIT_PASS: rabbitmqpass

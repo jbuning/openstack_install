@@ -1,0 +1,7 @@
+---
+# tasks file for comp-nova
+- name: Install the nova packages
+- name: Edit the /etc/nova/nova.conf
+- name: Restart the Compute services
+- name: Discover compute hosts from controller node or (add a discovery interval)
+...

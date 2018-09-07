@@ -1,0 +1,10 @@
+---
+# tasks file for horizon
+- name: Install horizon package
+- name: Edit the /etc/openstack-dashboard/local_settings.py
+- name: Edit /etc/apache2/conf-available/openstack-dashboard.conf
+- name: Reload the web server configuration
+  service:
+    name: apache2
+    status: reloaded
+...

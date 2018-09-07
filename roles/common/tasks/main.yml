@@ -1,0 +1,17 @@
+---
+# tasks file for common
+- name: Enable Openstack Repo
+  apt:
+    name: software-properties-common
+    state: present
+
+- name: Add Openstack Pike Repo
+  apt_repository:
+    repo: deb http://ubuntu-cloud.archive.canonical.com/ubuntu xenial-updates/pike main
+    state: present
+
+- name: Upgrade distribution packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+...

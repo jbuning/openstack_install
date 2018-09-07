@@ -1,0 +1,23 @@
+---
+# tasks file for cont-nova
+- name: Use the database access client to connect to the database server as the root user
+- name: Create the nova_api, nova, and nova_cell0 databases
+- name: Grant access to nova db
+- name: Source admin-openrc
+- name: Create the nova user
+- name: Add the admin role to the nova user
+- name: Create the nova service entity
+- name: Create the Compute API service endpoints
+- name: Create a Placement service user using your chosen PLACEMENT_PASS
+- name: Add the Placement user to the service project with the admin role
+- name: Create the Placement API entry in the service catalog
+- name: Create the Placement API service endpoints
+- name: Install the nova packages
+- name: Edit the /etc/nova/nova.conf
+- name: Populate the nova-api database
+- name: Register the cell0 database
+- name: Create the cell1 cell
+- name: Populate the nova database
+- name: Verify nova cell0 and cell1 are registered correctly
+- name: Restart the Compute services
+...

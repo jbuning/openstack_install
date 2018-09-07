@@ -1,0 +1,74 @@
+---
+# tasks file for controller
+- name: Install SQL database
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - mariadb-server
+    - python-pymysql
+    - python-mysqldb
+
+- name: Create/Edit /etc/mysql/mariadb.conf.d/99-openstack.cnf
+  template:
+    src: 99-openstack.template
+    dest: /etc/mysql/mariadb.conf.d/99-openstack.cnf
+
+- name: Restart mysql service
+  service:
+    name: mysql
+    state: restarted
+
+- name: Run mysql_secure_installation script
+  include: mysql_secure_installation.yml
+
+- name: Install RabbitMQ Server
+  apt:
+    name: rabbitmq-server
+    state: present
+
+- name: Add openstack user in RabbitMQ
+  rabbitmq_user:
+    user: openstack
+    password: "{{ RABBIT_PASS }}"
+    vhost: /
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    state: present
+
+- name: Install memcached
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - memcached
+    - python-memcache
+
+- name: Edit /etc/memcached.conf
+  lineinfile:
+    path: /etc/memcached.conf
+    regexp: '^-l'
+    line:  '-l {{ mgt_ip }}'
+
+- name: Restart memcached service
+  service:
+    name: memcached
+    state: restarted
+
+- name: Install etcd
+  apt:
+    name: etcd
+    state: present
+
+- name: Edit /etc/default/etcd
+  template:
+    src: etcd.template
+    dest: /etc/etcd/etcd.conf.yml
+
+- name: Enable and start etcd service
+  systemd:
+    name: etcd
+    state: started
+    enabled: yes
+...
