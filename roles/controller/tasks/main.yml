@@ -49,7 +49,7 @@
   lineinfile:
     path: /etc/memcached.conf
     regexp: '^-l'
-    line:  '-l {{ mgt_ip }}'
+    line: '-l {{ mgt_ip }}'
 
 - name: Restart memcached service
   service:

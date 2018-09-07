@@ -1,20 +1,101 @@
 ---
 # tasks file for keystone
-- name: Use the database access client to connect to the database server as the root user
 - name: Create keystone DB
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: keystone
+    state: present
+
 - name: Grant access to keystone DB
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    user: keystone
+    password: "{{ KEYSTONE_DBPASS }}"
+    state: present
+    priv: "keystone.*:ALL,GRANT"
+    host: "{{ item }}"
+  with_items:
+    - localhost
+    - "%"
+
 - name: Install keystone components
-- name: Edit /etc/keystone/keystone.conf
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - keystone
+    - apache2
+    - libapache2-mod-wsgi
+
+- name: Edit [database] section in /etc/keystone/keystone.conf
+  ini_file:
+    dest: /etc/keystone/keystone.conf
+    section: database
+    option: connection
+    value: mysql+pymysql://keystone:{{ KEYSTONE_DBPASS }}@controller/keystone
+
+- name: Edit [token] section in /etc/keystone/keystone.conf
+  ini_file:
+    dest: /etc/keystone/keystone.conf
+    section: token
+    option: provider
+    value: fernet
+
 - name: Populate the Identity service database
+  shell: /bin/sh -c "keystone-manage db_sync" keystone
+
 - name: Initialize Fernet key repositories
+  shell: |
+    keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+    keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+
 - name: Bootstrap the Identity service
+  shell: |
+    keystone-manage bootstrap --bootstrap-password {{ ADMIN_PASS }} \
+    --bootstrap-admin-url http://controller:35357/v3/ \
+    --bootstrap-internal-url http://controller:5000/v3/ \
+    --bootstrap-public-url http://controller:5000/v3/ \
+    --bootstrap-region-id RegionOne
+
 - name: Edit the /etc/apache2/apache2.conf
+  lineinfile:
+    path: /etc/apache2/apache2.conf
+    regexp: '^ServerName'
+    line: 'ServerName controller'
+
 - name: Restart the Apache service
-- name: Copy environment scripts
-- name: Run admin-openrc
+  service:
+    name: apache2
+    state: restarted
+
 - name: Create "Service Project"
-- name: Create "Demo Project"
-- name: Create demo user
-- name: Create user role
-- name: Add the user role to the demo project and user
+  os_project:
+    name: service
+    state: present
+    description: Service Project
+    domain_id: default
+    enabled: yes
+#  shell: openstack project create --domain default \
+#    --description "Service Project" service
+#  environment: "{{ ADMIN.env }}"
+
+#- name: Create "Demo Project"
+#  shell: openstack project create --domain default \
+#    --description "Demos Project" demos
+#  environment: "{{ ADMIN.env }}"
+#
+#- name: Create demo user
+#  shell: openstack user create --domain default \
+#    --password-prompt demo
+#  environment: "{{ ADMIN.env }}"
+#
+#- name: Create user role
+#  shell: openstack role create user
+#  environment: "{{ ADMIN.env }}"
+#
+#- name: Add the user role to the demo project and user
+#  shell: openstack role add --project demo --user demo user
+#  environment: "{{ ADMIN.env }}"
 ...
