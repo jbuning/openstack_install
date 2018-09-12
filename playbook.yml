@@ -4,13 +4,88 @@
   become: yes
   vars:
     mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
-    KEYSTONE_DBPASS: keystonedbpass
-
+    mysql_root_password: rootdbpass
+    NOVA_DBPASS: novadbpass
+    ADMIN:
+      env:
+        OS_PROJECT_DOMAIN_NAME: Default
+        OS_USER_DOMAIN_NAME: Default
+        OS_PROJECT_NAME: admin
+        OS_USERNAME: admin
+        OS_PASSWORD: adminpass
+        OS_AUTH_URL: http://controller:35357/v3
+        OS_IDENTITY_API_VERSION: 3
+        OS_IMAGE_API_VERSION: 2
+    num: 0
   tasks:
-#  - name: edit etcd
-#    template:
-#      src: roles/controller/templates/etcd.template
-#      dest: /etc/etcd/etcd.conf.yml
-  - name: edit keystone.conf
-    shell: echo \
-      "hello world"
+#    - shell: "echo {{ item }}"
+#      loop:
+#        - "one"
+#        - "two"
+#      register: echo
+#    - debug:
+#        msg: "{{ item.stdout }}"
+#      loop: "{{ echo.results }}"
+    - name: Create the nova_api, nova, and nova_cell0 databases
+      mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - nova_api
+        - nova
+        - nova_cell0
+#    - name: Grant access to nova_api DB
+#      mysql_user:
+#        login_user: root
+#        login_password: "{{ mysql_root_password }}"
+#        user: nova
+#        password: "{{ NOVA_DBPASS }}"
+#        state: present
+#        priv: "nova_api.*:ALL,GRANT"
+#        host: "{{ item }}"
+#        append_privs: yes
+#      with_items:
+#        - localhost
+#        - "%"
+#    - name: Grant access to nova DB
+#      mysql_user:
+#        login_user: root
+#        login_password: "{{ mysql_root_password }}"
+#        user: nova
+#        password: "{{ NOVA_DBPASS }}"
+#        state: present
+#        priv: "nova.*:ALL,GRANT"
+#        host: "{{ item }}"
+#        append_privs: yes
+#      with_items:
+#        - localhost
+#        - "%"
+#    - name: Grant access to nova_cell0 DB
+#      mysql_user:
+#        login_user: root
+#        login_password: "{{ mysql_root_password }}"
+#        user: nova
+#        password: "{{ NOVA_DBPASS }}"
+#        state: present
+#        priv: "nova_cell0.*:ALL,GRANT"
+#        host: "{{ item }}"
+#        append_privs: yes
+#      with_items:
+#        - localhost
+#        - "%"
+    - name: Grant access to glance DB
+      mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        user: nova
+        password: "{{ item[0] }}"
+        state: present
+        priv: "{{ item[1] }}.*:ALL,GRANT"
+        host: "{{ item[2] }}"
+        append_privs: yes
+      with_nested:
+        - [ '{{ NOVA_DBPASS }}' ]
+        - [ 'nova_api', 'nova', 'nova_cell0' ]
+        - [ 'localhost', '%' ]

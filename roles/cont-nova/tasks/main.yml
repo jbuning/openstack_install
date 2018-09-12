@@ -1,23 +1,203 @@
 ---
 # tasks file for cont-nova
-- name: Use the database access client to connect to the database server as the root user
 - name: Create the nova_api, nova, and nova_cell0 databases
-- name: Grant access to nova db
-- name: Source admin-openrc
-- name: Create the nova user
-- name: Add the admin role to the nova user
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nova_api
+    - nova
+    - nova_cell0
+
+- name: Grant access to nova DB
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    user: nova
+    password: "{{ NOVA_DBPASS }}"
+    state: present
+    priv: "{{ item[0] }}.*:ALL,GRANT"
+    host: "{{ item[1] }}"
+    append_privs: yes
+  with_nested:
+    - [ 'nova_api', 'nova', 'nova_cell0' ]
+    - [ 'localhost', '%' ]
+
+- name: Check if nova user exists
+  shell: openstack user show nova
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create nova user
+  shell: openstack user create --domain default \
+    --password {{ NOVA_PASS }} nova
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Add the admin role to the nova user and service project
+  shell: openstack role add --project service --user nova admin
+  environment: "{{ ADMIN.env }}"
+  changed_when: false
+
+- name: Check if nova service exists
+  shell: openstack service show nova
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Create the nova service entity
-- name: Create the Compute API service endpoints
+  shell: openstack service create --name nova \
+    --description "OpenStack Compute" compute
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Compute service API public endpoint exists
+  shell: openstack endpoint list --service nova --interface public
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Compute service API public endpoint
+  shell: openstack endpoint create --region RegionOne \
+    compute public http://controller:8774/v2.1
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Compute service API internal endpoint exists
+  shell: openstack endpoint list --service nova --interface internal
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Compute service API internal endpoint
+  shell: openstack endpoint create --region RegionOne \
+    compute internal http://controller:8774/v2.1
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Compute service API admin endpoint exists
+  shell: openstack endpoint list --service nova --interface admin
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Compute service API admin endpoint
+  shell: openstack endpoint create --region RegionOne \
+    compute admin http://controller:8774/v2.1
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Placement service user exists
+  shell: openstack user show placement
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Create a Placement service user using your chosen PLACEMENT_PASS
+  shell: openstack user create --domain default --password {{ PLACEMENT_PASS }} placement
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Add the Placement user to the service project with the admin role
+  shell: openstack role add --project service --user placement admin
+  environment: "{{ ADMIN.env }}"
+  changed_when: false
+
+- name: Check if Placement API entry in the service catalog exists
+  shell: openstack service show placement
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Create the Placement API entry in the service catalog
-- name: Create the Placement API service endpoints
-- name: Install the nova packages
-- name: Edit the /etc/nova/nova.conf
+  shell: openstack service create --name placement --description "Placement API" placement
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Placement service API public endpoint exists
+  shell: openstack endpoint list --service placement --interface public
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Placement service API public endpoint
+  shell: openstack endpoint create --region RegionOne placement public http://controller:8778
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Placement service API internal endpoint exists
+  shell: openstack endpoint list --service placement --interface internal
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Placement service API internal endpoint
+  shell: openstack endpoint create --region RegionOne placement internal http://controller:8778
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Placement service API admin endpoint exists
+  shell: openstack endpoint list --service placement --interface admin
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Placement service API admin endpoint
+  shell: openstack endpoint create --region RegionOne placement admin http://controller:8778
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Install compute packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nova-api
+    - nova-conductor
+    - nova-consoleauth
+    - nova-novncproxy
+    - nova-scheduler
+    - nova-placement-api
+
+- name: Edit the /etc/nova/nova.conf file
+  template:
+    src: nova.conf.template
+    dest: /etc/nova/nova.conf
+
 - name: Populate the nova-api database
+  shell: /bin/sh -c "nova-manage api_db sync" nova
+  changed_when: false
+
 - name: Register the cell0 database
+  shell: /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+  changed_when: false
+
 - name: Create the cell1 cell
+  shell: /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+  failed_when: result.rc > 2
+  changed_when: false
+
 - name: Populate the nova database
+  shell: /bin/sh -c "nova-manage db sync" nova
+  changed_when: false
+
 - name: Verify nova cell0 and cell1 are registered correctly
-- name: Restart the Compute services
+  shell: nova-manage cell_v2 list_cells
+  failed_when: result.rc != 0
+  changed_when: false
+
+- name: Restart Compute services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - nova-api
+    - nova-consoleauth
+    - nova-scheduler
+    - nova-conductor
+    - nova-novncproxy
+  changed_when: false
 ...

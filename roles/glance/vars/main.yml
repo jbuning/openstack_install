@@ -1,2 +1,5 @@
 ---
 # vars file for cont-glance
+GLANCE_DBPASS: glancedbpass
+GLANCE_PASS: glancepass
+mysql_root_password: rootdbpass

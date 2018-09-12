@@ -1,16 +1,113 @@
 ---
 # tasks file for glance
-- name: Use the database access client to connect to the database server as the root user
-- name: Create glance database
-- name: Grant access to glance db
-- name: Source admin-openrc
-- name: Create the glance user
+- name: Create glance DB
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: glance
+    state: present
+
+- name: Grant access to glance DB
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    user: glance
+    password: "{{ GLANCE_DBPASS }}"
+    state: present
+    priv: "glance.*:ALL,GRANT"
+    host: "{{ item }}"
+  with_items:
+    - localhost
+    - "%"
+
+- name: Check if glance user exists
+  shell: openstack user show glance
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create glance user
+  shell: openstack user create --domain default \
+    --password {{ GLANCE_PASS }} glance
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Add the admin role to the glance user and service project
+  shell: openstack role add --project service --user glance admin
+  environment: "{{ ADMIN.env }}"
+  changed_when: false
+
+- name: Check if glance service exists
+  shell: openstack service show glance
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Create the glance service entity
-- name: Create the Image service API endpoints
+  shell: openstack service create --name glance \
+    --description "OpenStack Image" image
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Image service API public endpoint exists
+  shell: openstack endpoint list --service glance --interface public
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Image service API public endpoint
+  shell: openstack endpoint create --region RegionOne \
+    image public http://controller:9292
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Image service API internal endpoint exists
+  shell: openstack endpoint list --service glance --interface internal
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Image service API internal endpoint
+  shell: openstack endpoint create --region RegionOne \
+    image internal http://controller:9292
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Image service API admin endpoint exists
+  shell: openstack endpoint list --service glance --interface admin
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Image service API admin endpoint
+  shell: openstack endpoint create --region RegionOne \
+    image admin http://controller:9292
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Install the glance package
+  apt:
+    name: glance
+    state: present
+
 - name: Edit the /etc/glance/glance-api.conf
+  template:
+    src: glance-api.conf.template
+    dest: /etc/glance/glance-api.conf
+
 - name: Edit the /etc/glance/glance-registry.conf
+  template:
+    src: glance-registry.conf.template
+    dest: /etc/glance/glance-registry.conf
+
 - name: Populate the Image service database
+  shell: /bin/sh -c "glance-manage db_sync" glance
+
 - name: Restart the Image services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - glance-registry
+    - glance-api
 ...

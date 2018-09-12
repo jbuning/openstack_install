@@ -8,7 +8,7 @@
     - mariadb-server
     - python-pymysql
     - python-mysqldb
-
+    
 - name: Create/Edit /etc/mysql/mariadb.conf.d/99-openstack.cnf
   template:
     src: 99-openstack.template

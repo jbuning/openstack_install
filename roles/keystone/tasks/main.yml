@@ -70,32 +70,55 @@
     name: apache2
     state: restarted
 
-- name: Create "Service Project"
-  os_project:
-    name: service
-    state: present
-    description: Service Project
-    domain_id: default
-    enabled: yes
-#  shell: openstack project create --domain default \
-#    --description "Service Project" service
-#  environment: "{{ ADMIN.env }}"
+- name: Check if Service project exists
+  shell: openstack project show service
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
 
-#- name: Create "Demo Project"
-#  shell: openstack project create --domain default \
-#    --description "Demos Project" demos
-#  environment: "{{ ADMIN.env }}"
-#
-#- name: Create demo user
-#  shell: openstack user create --domain default \
-#    --password-prompt demo
-#  environment: "{{ ADMIN.env }}"
-#
-#- name: Create user role
-#  shell: openstack role create user
-#  environment: "{{ ADMIN.env }}"
-#
-#- name: Add the user role to the demo project and user
-#  shell: openstack role add --project demo --user demo user
-#  environment: "{{ ADMIN.env }}"
+- name: Create "Service Project"
+  shell: openstack project create --domain default \
+    --description "Service Project" service
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Demo project exists
+  shell: openstack project show demo
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create "Demo Project"
+  shell: openstack project create --domain default \
+    --description "Demos Project" demos
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if demo user exists
+  shell: openstack user show demo
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create demo user
+  shell: openstack user create --domain default \
+    --password {{ DEMO_PASS }} demo
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if user role exists
+  shell: openstack role show user
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create user role
+  shell: openstack role create user
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Add the user role to the demo project and user
+  shell: openstack role add --project demo --user demo user
+  environment: "{{ ADMIN.env }}"
+  changed_when: false
 ...

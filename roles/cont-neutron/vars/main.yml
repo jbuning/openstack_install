@@ -1,2 +1,29 @@
 ---
 # vars file for cont-neutron
+mysql_root_password: rootdbpass
+NOVA_DBPASS: novadbpass
+NOVA_PASS: novapass
+PLACEMENT_PASS: placementpass
+mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
+RABBIT_PASS: rabbitmqpass
+ADMIN:
+  env:
+    OS_PROJECT_DOMAIN_NAME: Default
+    OS_USER_DOMAIN_NAME: Default
+    OS_PROJECT_NAME: admin
+    OS_USERNAME: admin
+    OS_PASSWORD: adminpass
+    OS_AUTH_URL: http://controller:35357/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+DEMO:
+  env:
+    OS_PROJECT_DOMAIN_NAME: Default
+    OS_USER_DOMAIN_NAME: Default
+    OS_PROJECT_NAME: demo
+    OS_USERNAME: demo
+    OS_PASSWORD: demopass
+    OS_AUTH_URL: http://controller:5000/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+...
