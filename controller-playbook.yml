@@ -1,13 +1,13 @@
 ---
 - name: Controller Playbook
-  hosts: controller-1
+  hosts: controller-nodes
   become: yes
   roles:
-    #- common
-    #- controller
-    #- keystone
-    #- glance
-    #- cont-nova
+    - common
+    - controller
+    - keystone
+    - glance
+    - cont-nova
     - cont-neutron
-    #- horizon
+    - horizon
     #- cont-cinder

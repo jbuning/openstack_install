@@ -4,8 +4,10 @@ mysql_root_password: rootdbpass
 NOVA_DBPASS: novadbpass
 NOVA_PASS: novapass
 PLACEMENT_PASS: placementpass
-mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
+mgt_ip: "{{ansible_host}}"
 RABBIT_PASS: rabbitmqpass
+METADATA_SECRET: mdsecret
+NEUTRON_PASS: neutronpass
 ADMIN:
   env:
     OS_PROJECT_DOMAIN_NAME: Default

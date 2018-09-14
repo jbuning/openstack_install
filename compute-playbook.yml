@@ -1,0 +1,8 @@
+---
+- name: Compute Playbook
+  hosts: compute-nodes
+  become: yes
+  roles:
+    - common
+    - comp-nova
+    - comp-neutron

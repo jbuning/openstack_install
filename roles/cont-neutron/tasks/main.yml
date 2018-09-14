@@ -1,17 +1,132 @@
 ---
 # tasks file for cont-neutron
-- name: Use the database access client to connect to the database server as the root user
 - name: Create neutron database
-- name: Grant access to neutron db
-- name: Source admin-openrc
-- name: Create the neutron user
-- name: Add the admin role to the neutron user
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: neutron
+    state: present
+
+- name: Grant access to neutron DB
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    user: neutron
+    password: "{{ NEUTRON_DBPASS }}"
+    state: present
+    priv: "neutron.*:ALL,GRANT"
+    host: "{{ item }}"
+  with_items:
+    - localhost
+    - "%"
+
+- name: Check if neutron user exists
+  shell: openstack user show neutron
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create neutron user
+  shell: openstack user create --domain default \
+    --password {{ NEUTRON_PASS }} neutron
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Add the admin role to the neutron user and service project
+  shell: openstack role add --project service --user neutron admin
+  environment: "{{ ADMIN.env }}"
+  changed_when: false
+
+- name: Check if neutron service exists
+  shell: openstack service show neutron
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
 - name: Create the neutron service entity
-- name: Create the Networking service API endpoints
-- name: Install the neutron package (https://docs.openstack.org/ocata/networking-guide/deploy-ovs-provider.html)
+  shell: openstack service create --name neutron \
+    --description "OpenStack Networking" network
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Networking service API public endpoint exists
+  shell: openstack endpoint list --service neutron --interface public
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Networking service API public endpoint
+  shell: openstack endpoint create --region RegionOne \
+    network public http://controller:9696
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Networking service API internal endpoint exists
+  shell: openstack endpoint list --service neutron --interface internal
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Networking service API internal endpoint
+  shell: openstack endpoint create --region RegionOne \
+    network internal http://controller:9696
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Check if Networking service API admin endpoint exists
+  shell: openstack endpoint list --service neutron --interface admin
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Create the Networking service API admin endpoint
+  shell: openstack endpoint create --region RegionOne \
+    network admin http://controller:9696
+  when: result.rc == 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Install the neutron package
+  apt:
+    name: "{{ item }}"
+    state: present
+    allow_unauthenticated: yes
+  with_items:
+    - neutron-server
+    - neutron-plugin-ml2
+
 - name: Edit the /etc/neutron/neutron.conf
+  template:
+    src: neutron.conf.template
+    dest: /etc/neutron/neutron.conf
+
 - name: Edit the /etc/neutron/plugins/ml2/ml2_conf.ini
+  ini_file:
+    dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop:
+    - { section: 'ml2', option: 'type_drivers', value: 'flat,vlan'}
+    - { section: 'ml2', option: 'tenant_network_types', value: ''}
+    - { section: 'ml2', option: 'mechanism_drivers', value: 'openvswitch'}
+    - { section: 'ml2', option: 'extension_drivers', value: 'port_security'}
+    - { section: 'ml2_type_flat', option: 'flat_networks', value: 'provider'}
+    - { section: 'ml2_type_vlan', option: 'network_vlan_ranges', value: 'provider'}
+    - { section: 'security', option: 'enable_ipset', value: 'true'}
+
 - name: Populate the Networking service database
-- name: Restart the Compute API service
-- name: Restart the Networking service
+  shell: |
+    /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf \
+    --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+  changed_when: false
+
+- name: Restart the Compute API and Networking services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - nova-api
+    - neutron-server
+  changed_when: false
+
 ...

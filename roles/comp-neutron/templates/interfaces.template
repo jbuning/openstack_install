@@ -1,0 +1,33 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+# This is an autoconfigured IPv6 interface
+#auto enp2s0f0
+#iface enp2s0f0 inet6 auto
+
+auto br-provider
+allow-ovs br-provider
+iface br-provider inet static
+        address {{def_address}}
+        netmask {{def_netmask}}
+        gateway {{def_gateway}}
+	dns-nameservers 10.171.0.1 10.171.0.2
+	ovs_type OVSBridge
+	ovs_ports {{def_interface}}
+
+allow-br-provider {{def_interface}}
+iface {{def_interface}} inet manual
+  	ovs_bridge br-provider
+  	ovs_type OVSPort
+
+auto {{extra_interface}}
+iface {{extra_interface}} inet manual
+up ip link set dev $IFACE up
+down ip link set dev $IFACE down

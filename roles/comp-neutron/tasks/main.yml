@@ -1,12 +1,93 @@
 ---
 # tasks file for comp-neutron
 - name: Install the neutron packages (OVS layer 2 neutron-openvswitch-agent, DHCP, metadata agents)
+  apt:
+    name: "{{ item }}"
+    state: present
+    allow_unauthenticated: yes
+  loop:
+    - neutron-dhcp-agent
+    - neutron-metadata-agent
+    - neutron-openvswitch-agent
+
+- name: Check if br-provider interface is existing
+  shell: ifconfig | grep -w br-*
+  register: result
+  failed_when: result.rc > 1
+  changed_when: false
+
+- name: Configure networking of the node
+  template:
+    src: interfaces.template
+    dest: /etc/network/interfaces
+    backup: yes
+  when: result.rc == 1
+
+# not necessary any more
+#- name: Create OVS Provider bridge
+#  shell: ovs-vsctl add-br br-provider
+#  when: result.rc == 1
+#
+#- name: Add Add the provider network interface as a port on the provider bridge
+#  shell: ovs-vsctl add-port br-provider {{ def_interface }}
+#  when: result.rc == 1
+
+- name: Reboot node for the changes to take effect
+  shell: /sbin/shutdown -r +1 "Triggered by Ansible"
+  async: 0
+  poll: 0
+  #ignore_errors: true
+  when: result.rc == 1
+
+- name: Wait for node to UP
+  wait_for_connection:
+    sleep: 30
+    delay: 75
+    timeout: 300
+
 - name: Edit the /etc/neutron/neutron.conf
+  template:
+    src: neutron.conf.template
+    dest: /etc/neutron/neutron.conf
+
 - name: Edit the /etc/neutron/plugins/ml2/openvswitch_agent.ini
+  ini_file:
+    dest: /etc/neutron/plugins/ml2/openvswitch_agent.ini
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop:
+    - { section: 'ovs', option: 'bridge_mappings', value: 'provider:br-provider,sut-net:br-sut'}
+    - { section: 'securitygroup', option: 'firewall_driver', value: 'iptables_hybrid'}
+
 - name: Edit the /etc/neutron/dhcp_agent.ini
+  ini_file:
+    dest: /etc/neutron/dhcp_agent.ini
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop:
+    - { section: 'DEFAULT', option: 'interface_driver', value: 'openvswitch'}
+    - { section: 'DEFAULT', option: 'enable_isolated_metadata', value: 'true'}
+    - { section: 'DEFAULT', option: 'force_metadata', value: 'true'}
+
 - name: Edit the /etc/neutron/metadata_agent.ini
-- name: Start OVS service
-- name: Create OVS Provider bridge
-- name: Edit the /etc/network/interfaces and add IP to the provider bridge
+  ini_file:
+    dest: /etc/neutron/metadata_agent.ini
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop:
+    - { section: 'DEFAULT', option: 'nova_metadata_host', value: 'controller'}
+    - { section: 'DEFAULT', option: 'metadata_proxy_shared_secret', value: '{{ METADATA_SECRET }}'}
+
 - name: Restart the Networking services (OVS agent, DHCP Agent, Metadata Agent)
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - neutron-openvswitch-agent
+    - neutron-metadata-agent
+    - neutron-dhcp-agent
+  changed_when: false
 ...

@@ -89,6 +89,7 @@
   apt:
     name: glance
     state: present
+    allow_unauthenticated: yes
 
 - name: Edit the /etc/glance/glance-api.conf
   template:

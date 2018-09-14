@@ -1,0 +1,16 @@
+127.0.0.1	localhost
+127.0.1.1	{{ ansible_hostname }}
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+# Add/Update all hosts in the cloud env
+10.12.24.4  controller
+10.12.24.5  compute-1
+10.12.24.6  compute-2
+10.12.24.7  compute-3
+10.12.24.8  compute-4
+10.12.24.9  compute-5
+10.12.24.10 storage-1
+10.12.24.11 storage-2

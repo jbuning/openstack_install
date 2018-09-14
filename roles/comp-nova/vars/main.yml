@@ -1,2 +1,6 @@
 ---
 # vars file for comp-nova
+mgt_ip: "{{ansible_host}}"
+NOVA_PASS: novapass
+PLACEMENT_PASS: placementpass
+RABBIT_PASS: rabbitmqpass

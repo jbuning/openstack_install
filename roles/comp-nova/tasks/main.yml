@@ -1,7 +1,33 @@
 ---
 # tasks file for comp-nova
-- name: Install the nova packages
+- name: Install the nova package
+  apt:
+    name: nova-compute
+    state: present
+    allow_unauthenticated: yes
+
 - name: Edit the /etc/nova/nova.conf
+  template:
+    src: nova.conf.template
+    dest: /etc/nova/nova.conf
+
+- name: Check if compute node supports hw acceleration for VMs
+  shell: egrep -c '(vmx|svm)' /proc/cpuinfo
+  register: result
+  changed_when: false
+
+- name: Edit /etc/nova/nova-compute.conf if 0 hw acceleration
+  ini_file:
+    dest: /etc/nova/nova-compute.conf
+    section: libvirt
+    option: virt_type
+    value: qemu
+  when: result.stdout == 0
+
 - name: Restart the Compute services
-- name: Discover compute hosts from controller node or (add a discovery interval)
+  service:
+    name: nova-compute
+    state: restarted
+  changed_when: false
+
 ...

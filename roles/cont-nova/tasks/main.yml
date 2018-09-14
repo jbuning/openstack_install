@@ -154,6 +154,7 @@
   apt:
     name: "{{ item }}"
     state: present
+    allow_unauthenticated: yes
   with_items:
     - nova-api
     - nova-conductor
@@ -200,4 +201,15 @@
     - nova-conductor
     - nova-novncproxy
   changed_when: false
+
+- name: Check if compute host exists in database
+  shell: openstack compute service list --service nova-compute
+  register: result
+  failed_when: result.rc > 1
+  environment: "{{ ADMIN.env }}"
+
+- name: Discover compute hosts
+  shell: /bin/sh -c "nova-manage cell_v2 discover_hosts --verbose" nova
+  changed_when: false
+  tags: discover_hosts
 ...

@@ -1,9 +1,9 @@
 ---
 # vars file for cont-neutron
 mysql_root_password: rootdbpass
-NOVA_DBPASS: novadbpass
+NEUTRON_DBPASS: neutrondbpass
+NEUTRON_PASS: neutronpass
 NOVA_PASS: novapass
-PLACEMENT_PASS: placementpass
 mgt_ip: "{{hostvars['controller-1'].ansible_host}}"
 RABBIT_PASS: rabbitmqpass
 ADMIN:

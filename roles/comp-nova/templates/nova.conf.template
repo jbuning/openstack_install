@@ -304,7 +304,7 @@ firewall_driver = nova.virt.firewall.NoopFirewallDriver
 # * False: Instances should continue booting after VIF plugging timeout
 #  (boolean value)
 #vif_plugging_is_fatal = true
-
+vif_plugging_is_fatal = False
 #
 # Timeout for Neutron VIF plugging event message arrival.
 #
@@ -319,7 +319,7 @@ firewall_driver = nova.virt.firewall.NoopFirewallDriver
 #  (integer value)
 # Minimum value: 0
 #vif_plugging_timeout = 300
-
+vif_plugging_timeout = 10
 # Path to '/etc/network/interfaces' template.
 #
 # The path to a template file for the '/etc/network/interfaces'-style file,
@@ -3180,11 +3180,9 @@ firewall_driver = nova.virt.firewall.NoopFirewallDriver
 
 
 [api]
-auth_strategy = keystone
-
 #
 # Options under this group are used to define Nova API.
-
+auth_strategy = keystone
 #
 # From nova.conf
 #
@@ -3471,8 +3469,7 @@ auth_strategy = keystone
 
 
 [api_database]
-#connection = sqlite:////var/lib/nova/nova_api.sqlite
-connection = mysql+pymysql://nova:{{ NOVA_DBPASS }}@controller/nova_api
+connection = sqlite:////var/lib/nova/nova_api.sqlite
 #
 # The *Nova API Database* is a separate database which is used for information
 # which is used across *cells*. This database is mandatory since the Mitaka
@@ -4143,7 +4140,7 @@ enable = False
 
 
 [cinder]
-os_region_name = RegionOne
+
 #
 # From nova.conf
 #
@@ -4444,8 +4441,8 @@ os_region_name = RegionOne
 
 
 [database]
-#connection = sqlite:////var/lib/nova/nova.sqlite
-connection = mysql+pymysql://nova:{{ NOVA_DBPASS }}@controller/nova
+connection = sqlite:////var/lib/nova/nova.sqlite
+
 #
 # From oslo.db
 #
@@ -5032,8 +5029,9 @@ connection = mysql+pymysql://nova:{{ NOVA_DBPASS }}@controller/nova
 
 
 [glance]
-# Configuration options for the Image service
 api_servers = http://controller:9292
+# Configuration options for the Image service
+
 #
 # From nova.conf
 #
@@ -7150,9 +7148,7 @@ user_domain_name = default
 region_name = RegionOne
 project_name = service
 username = neutron
-password = {{ NEUTRON_PASS }}
-service_metadata_proxy = true
-metadata_proxy_shared_secret ={{ METADATA_SECRET }}
+password = neutronpass
 #
 # Configuration options for neutron (network connectivity as a service).
 
@@ -9839,12 +9835,14 @@ password = {{ PLACEMENT_PASS }}
 
 
 [vnc]
+enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = $my_ip
+novncproxy_base_url = http://{{hostvars['controller-1'].ansible_host}}:6080/vnc_auto.html
 #
 # Virtual Network Computer (VNC) can be used to provide remote desktop
 # console access to instances for tenants and/or administrators.
-enabled = true
-vncserver_listen = $my_ip
-vncserver_proxyclient_address = $my_ip
+
 #
 # From nova.conf
 #
@@ -9908,7 +9906,7 @@ vncserver_proxyclient_address = $my_ip
 # * novncproxy_port
 #  (uri value)
 #novncproxy_base_url = http://127.0.0.1:6080/vnc_auto.html
-novncproxy_base_url = http://$my_ip:6080/vnc_auto.html
+
 #
 # IP address or hostname that the XVP VNC console proxy should bind to.
 #
