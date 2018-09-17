@@ -331,7 +331,7 @@ OPENSTACK_NEUTRON_NETWORK = {
 #    'enable_distributed_router': False,
 #    'enable_ha_router': False,
 #    'enable_fip_topology_check': True,
-    'enable_router': True,
+    'enable_router': False,
     'enable_quotas': False,
     'enable_ipv6': False,
     'enable_distributed_router': False,

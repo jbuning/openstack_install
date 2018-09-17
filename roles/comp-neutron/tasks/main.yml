@@ -42,7 +42,7 @@
 - name: Wait for node to UP
   wait_for_connection:
     sleep: 30
-    delay: 75
+    delay: 180
     timeout: 300
 
 - name: Edit the /etc/neutron/neutron.conf
@@ -57,7 +57,7 @@
     option: "{{ item.option }}"
     value: "{{ item.value }}"
   loop:
-    - { section: 'ovs', option: 'bridge_mappings', value: 'provider:br-provider,sut-net:br-sut'}
+    - { section: 'ovs', option: 'bridge_mappings', value: 'provider:br-provider'}
     - { section: 'securitygroup', option: 'firewall_driver', value: 'iptables_hybrid'}
 
 - name: Edit the /etc/neutron/dhcp_agent.ini
